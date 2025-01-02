@@ -1,0 +1,27 @@
+import sqlite3
+
+# Conectar (ou criar) ao banco de dados
+conexao = sqlite3.connect("candidaturas.db")
+
+# Criar um cursor para executar comandos SQL
+cursor = conexao.cursor()
+
+# Criar a tabela para armazenar as candidaturas
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS candidaturas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data_candidatura TEXT NOT NULL,
+    email_enviado TEXT NOT NULL,
+    status_envio TEXT NOT NULL,
+    status_resposta TEXT,
+    data_entrevista TEXT,
+    metodo_entrevista TEXT
+)
+""")
+
+# Salvar alterações e fechar a conexão
+conexao.commit()
+conexao.close()
+
+print("Banco de dados e tabela criados com sucesso!")
+
