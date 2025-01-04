@@ -1,0 +1,1 @@
+# Explicação geral do projeto
