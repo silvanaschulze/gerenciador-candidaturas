@@ -6,3 +6,4 @@ candidaturas.db
 *.save
 .DS_Store
 
+db/*.db
