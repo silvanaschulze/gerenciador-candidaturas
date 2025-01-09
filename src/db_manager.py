@@ -1,6 +1,16 @@
 import sqlite3
+import urllib.parse
 
 DB_PATH = "candidaturas.db"
+
+VALID_STATUSES = ["Enviado", "Pendente", "Arquivada", "Aguardando Retorno"]
+
+"""
+    Gera um link para abrir o local da entrevista no Google Maps.
+    """
+def gerar_link_google_maps(local_entrevista):
+    base_url = "https://www.google.com/maps/search/?api=1&query="
+    return base_url + urllib.parse.quote(local_entrevista)
 
 # Função genérica para conectar ao banco de dados
 def conectar_banco():
@@ -48,7 +58,9 @@ def criar_tabelas():
             resposta_feedback TEXT,
             status_resposta TEXT,
             data_entrevista TEXT,
-            metodo_entrevista TEXT
+            metodo_entrevista TEXT,
+            local_entrevista TEXT,
+            link_google_maps TEXT
         )
         """)
 
@@ -85,14 +97,64 @@ def criar_tabelas():
         conexao.close()
 
 
+#Adiciona as colunas 'local_entrevista' e 'link_google_maps' na tabela 'candidaturas', se ainda não existirem.
 
+def atualizar_tabela_candidaturas():
+    
+    conexao = conectar_banco()
+    try:
+        cursor = conexao.cursor()
+        # Adicionar a coluna 'local_entrevista' se não existir
+        cursor.execute("PRAGMA table_info(candidaturas)")
+        colunas = [info[1] for info in cursor.fetchall()]
+        
+        if "local_entrevista" not in colunas:
+            cursor.execute("ALTER TABLE candidaturas ADD COLUMN local_entrevista TEXT")
+            print("Coluna 'local_entrevista' adicionada com sucesso!")
+        
+        if "link_google_maps" not in colunas:
+            cursor.execute("ALTER TABLE candidaturas ADD COLUMN link_google_maps TEXT")
+            print("Coluna 'link_google_maps' adicionada com sucesso!")
+
+        conexao.commit()
+    except Exception as e:
+        print(f"Erro ao atualizar a tabela 'candidaturas': {e}")
+    finally:
+        conexao.close()
+
+# Chamar a função para garantir que a tabela está atualizada
+atualizar_tabela_candidaturas()
+
+
+# Gera um link para adicionar um evento ao Google Agenda.
+
+def gerar_link_google_agenda(titulo, data_inicio, data_fim, descricao, local):
+    base_url = "https://www.google.com/calendar/render?action=TEMPLATE" 
+    param = {
+        "text" : titulo,
+        "dates" : f"{data_fim}/{data_fim}",
+        "details": descricao,
+        "location": local,
+    }
+    return base_url + "&" + urllib.parse.urlencode(param)
 
     #Adicionar candidaturas
 
-def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback):
+def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_feedback=None, resposta_feedback=None, local_entrevista=None):
     """
     Adiciona uma nova candidatura ao banco de dados, se ela não for duplicada.
     """
+    if not data_candidatura or not email_enviado or not status_envio:
+        print("Os campos 'data_candidatura', 'email_enviado' e 'status_envio' são obrigatórios.")
+        return False
+
+    if status_envio not in VALID_STATUSES:
+        print(f"Status inválido: {status_envio}. Use um dos metodos seguintes: {', '.join(VALID_STATUSES)}")
+        return False
+    
+    link_google_maps = None
+    if local_entrevista:
+        link_google_maps = gerar_link_google_maps(local_entrevista)
     conexao = conectar_banco()  # Usa a função genérica para abrir conexão
     try:
         # Verificar duplicação usando a função verificar_duplicado
@@ -104,9 +166,9 @@ def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_fe
             # Inserir a nova candidatura
             cursor = conexao.cursor()
             cursor.execute("""
-            INSERT INTO candidaturas (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback)
-            VALUES (?, ?, ?, ?, ?)
-            """, (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback))
+            INSERT INTO candidaturas (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback, local_entrevista, link_google_maps)
+            VALUES (?, ?, ?, ?, ?,?, ?)
+            """, (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback, local_entrevista, link_google_maps))
             conexao.commit()
             print("Candidatura adicionada com sucesso!")
             return True  # Retorna True se a inserção for bem-sucedida

@@ -1,7 +1,8 @@
-from db_manager import criar_tabelas, adicionar_candidatura, listar_candidaturas, pesquisar_candidaturas, atualizar_registro
+from db_manager import criar_tabelas, adicionar_candidatura, listar_candidaturas, pesquisar_candidaturas, atualizar_registro, atualizar_tabela_candidaturas
 
 # Criar tabelas no banco de dados
 criar_tabelas()
+atualizar_tabela_candidaturas()
 
 atualizar_registro(
     "candidaturas",
@@ -12,7 +13,13 @@ atualizar_registro(
 
 
 # Adicionar uma candidatura
-adicionar_candidatura("20-12-2024", "empresa1@example.com", "Enviado", "25-12-2024", "Pendente")
+adicionar_candidatura(
+    "2025-01-10",
+    "teste1@example.com",
+    "Arquivada",
+    local_entrevista="Rua Exemplo, 123, São Paulo, SP"
+)
+
 
 # Listar candidaturas
 candidaturas = listar_candidaturas()
