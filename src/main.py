@@ -1,4 +1,5 @@
-from db_manager import criar_tabelas, adicionar_candidatura, listar_candidaturas, pesquisar_candidaturas, atualizar_registro, atualizar_tabela_candidaturas
+from db_manager import *
+#criar_tabelas, adicionar_candidatura, listar_candidaturas, pesquisar_candidaturas, atualizar_registro, atualizar_tabela_candidaturas
 
 # Criar tabelas no banco de dados
 criar_tabelas()

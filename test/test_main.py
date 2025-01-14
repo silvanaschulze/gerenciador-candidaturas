@@ -4,8 +4,9 @@ import os
 # Adiciona o diretório principal ao PYTHONPATH
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-import unittest
-from db_manager import adicionar_candidatura, excluir_candidatura, listar_candidaturas
+#import unittest
+from db_manager import *
+adicionar_candidatura, excluir_candidatura, listar_candidaturas
 
 class TestDBManager(unittest.TestCase):
     @classmethod
