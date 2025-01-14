@@ -139,44 +139,57 @@ def gerar_link_google_agenda(titulo, data_inicio, data_fim, descricao, local):
     return base_url + "&" + urllib.parse.urlencode(param)
 
     #Adicionar candidaturas
+    
 
 def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_feedback=None, resposta_feedback=None, local_entrevista=None):
     """
     Adiciona uma nova candidatura ao banco de dados, se ela não for duplicada.
     """
+    # Verificar campos obrigatórios
     if not data_candidatura or not email_enviado or not status_envio:
         print("Os campos 'data_candidatura', 'email_enviado' e 'status_envio' são obrigatórios.")
         return False
 
+    # Verificar se o status é válido
     if status_envio not in VALID_STATUSES:
-        print(f"Status inválido: {status_envio}. Use um dos metodos seguintes: {', '.join(VALID_STATUSES)}")
+        print(f"Status inválido: {status_envio}. Use um dos seguintes: {', '.join(VALID_STATUSES)}")
         return False
-    
+
+    # Gerar link do Google Maps, se o local for fornecido
     link_google_maps = None
     if local_entrevista:
         link_google_maps = gerar_link_google_maps(local_entrevista)
-    conexao = conectar_banco()  # Usa a função genérica para abrir conexão
+
+    # Exibir dados da candidatura antes de inserir
+    print(f"Adicionando candidatura: data={data_candidatura}, email={email_enviado}, status={status_envio}, local={local_entrevista}")
+
+    conexao = conectar_banco()  # Conectar ao banco de dados
     try:
-        # Verificar duplicação usando a função verificar_duplicado
+        cursor = conexao.cursor()
+
+        # Verificar duplicação
         if verificar_duplicado("candidaturas", ["data_candidatura", "email_enviado", "status_envio"], 
                                [data_candidatura, email_enviado, status_envio]):
             print("Candidatura já existe! Não será adicionada novamente.")
-            return False  # Retorna False se a candidatura for duplicada
-        else:
-            # Inserir a nova candidatura
-            cursor = conexao.cursor()
-            cursor.execute("""
+            return False  # Retorna False se for duplicada
+
+        # Inserir a nova candidatura no banco de dados
+        cursor.execute("""
             INSERT INTO candidaturas (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback, local_entrevista, link_google_maps)
-            VALUES (?, ?, ?, ?, ?,?, ?)
-            """, (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback, local_entrevista, link_google_maps))
-            conexao.commit()
-            print("Candidatura adicionada com sucesso!")
-            return True  # Retorna True se a inserção for bem-sucedida
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback, local_entrevista, link_google_maps))
+        print(f"Candidatura adicionada: data={data_candidatura}, email={email_enviado}, status={status_envio}")
+
+    # Salvar alterações no banco
+        conexao.commit()
+        print("Candidatura adicionada com sucesso!")
+        return True  # Retorna True se a inserção for bem-sucedida
     except Exception as e:
         print(f"Erro ao adicionar candidatura: {e}")
         return False  # Retorna False se ocorrer um erro
     finally:
-        conexao.close()
+        conexao.close()  # Fecha a conexão com o banco
+       
 
 
 def pesquisar_candidaturas(criterio=None, valor=None):
@@ -212,17 +225,18 @@ def pesquisar_candidaturas(criterio=None, valor=None):
 
 def listar_candidaturas():
     """
-    Lista todas as candidaturas no banco de dados.
+    Retorna todas as candidaturas do banco de dados.
     """
+    conexao = conectar_banco()
     try:
-        with conectar_banco() as conexao:
-            cursor = conexao.cursor()
-            cursor.execute("SELECT * FROM candidaturas")
-            resultados = cursor.fetchall()
-            return resultados
-    except sqlite3.Error as e:
-        print(f"Erro ao listar candidaturas: {e}")
-        return []
+        cursor = conexao.cursor()
+        cursor.execute("SELECT * FROM candidaturas")  # A consulta deve retornar todos os registros
+        resultados = cursor.fetchall()
+        print("Candidaturas retornadas pelo banco de dados:", resultados)  # Para depuração
+        return resultados
+    finally:
+        conexao.close()
+
 
 def atualizar_registro(tabela, colunas_valores, criterio, valor):
     if not colunas_valores:
