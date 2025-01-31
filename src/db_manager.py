@@ -1,7 +1,8 @@
 import sqlite3
 import urllib.parse
 
-DB_PATH = "candidaturas.db"
+DB_PATH = "db/candidaturas.db"
+
 
 VALID_STATUSES = ["Enviado", "Pendente", "Arquivada", "Aguardando Retorno"]
 
@@ -132,7 +133,7 @@ def gerar_link_google_agenda(titulo, data_inicio, data_fim, descricao, local):
     base_url = "https://www.google.com/calendar/render?action=TEMPLATE" 
     param = {
         "text" : titulo,
-        "dates" : f"{data_fim}/{data_fim}",
+        "dates" : f"{data_inicio}/{data_fim}",
         "details": descricao,
         "location": local,
     }
@@ -141,7 +142,7 @@ def gerar_link_google_agenda(titulo, data_inicio, data_fim, descricao, local):
     #Adicionar candidaturas
     
 
-def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_feedback=None, resposta_feedback=None, local_entrevista=None):
+def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_feedback=None, resposta_feedback=None, local_entrevista=None, data_entrevista=None):
     """
     Adiciona uma nova candidatura ao banco de dados, se ela não for duplicada.
     """
@@ -160,8 +161,19 @@ def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_fe
     if local_entrevista:
         link_google_maps = gerar_link_google_maps(local_entrevista)
 
-    # Exibir dados da candidatura antes de inserir
-    print(f"Adicionando candidatura: data={data_candidatura}, email={email_enviado}, status={status_envio}, local={local_entrevista}")
+    # Gerar link do Google Agenda, se houver data e local de entrevista
+    link_google_agenda = None
+    if local_entrevista and data_entrevista:
+        link_google_agenda = gerar_link_google_agenda(
+            "Entrevista de Emprego",
+            data_entrevista + "T090000Z", # Horário inicial (9h da manhã como exemplo)
+            data_entrevista + "T100000Z",  # Horário final (10h da manhã como exemplo)
+            f"Entrevista de emprego no local {local_entrevista}",
+            local_entrevista
+        )
+    # exibir dados da candidatura antes de inserir
+    print(f"Adicionado candidatura: data = {data_candidatura}, email= {email_enviado}, status = {status_envio}, local = {local_entrevista}")
+
 
     conexao = conectar_banco()  # Conectar ao banco de dados
     try:
@@ -179,6 +191,12 @@ def adicionar_candidatura(data_candidatura, email_enviado, status_envio, data_fe
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (data_candidatura, email_enviado, status_envio, data_feedback, resposta_feedback, local_entrevista, link_google_maps))
         print(f"Candidatura adicionada: data={data_candidatura}, email={email_enviado}, status={status_envio}")
+    
+    #retornar links gerados (para debug ou armazenamentos no banco de dados)
+        return{
+            "google_maps": link_google_maps,
+            "google_agenda": link_google_agenda
+        }
 
     # Salvar alterações no banco
         conexao.commit()
